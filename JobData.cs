@@ -98,7 +98,8 @@ namespace DvMod.RemoteDispatch
                     new JProperty("requiredLicenses", RequiredLicenses(job)),
                     new JProperty("length", TotalLength(mainTask)),
                     new JProperty("mass", TotalMass(mainTask) / 1000),
-                    new JProperty("basePayment", job.GetBasePaymentForTheJob()));
+                    new JProperty("basePayment", job.GetBasePaymentForTheJob()),
+                    new JProperty("isActive", job.State == JobState.InProgress));
             }
 
             // ensure cache is updated
@@ -133,6 +134,19 @@ namespace DvMod.RemoteDispatch
             {
                 Main.DebugLog(() => "Persistent Jobs sent update for job " + job.ID);
                 Sessions.AddTag("jobs");
+            }
+            [HarmonyPatch(typeof(Job))]
+            public static class UpdateJobStatePatches
+            {
+                [HarmonyPostfix]
+                [HarmonyPatch(nameof(Job.TakeJob))]
+                public static void TakeJobPostfix(Job __instance, bool takenViaLoadGame)
+                {
+                    if (!takenViaLoadGame)
+                    {
+                        Sessions.AddTag("jobs");
+                    }
+                }
             }
         }
     }
